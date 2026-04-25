@@ -6,6 +6,16 @@ import org.bukkit.command.CommandSender;
 
 //TODO refactor this
 public enum Messages {
+    // CategoryXP command
+    COMMAND_CATEGORYXP_ONLY_PLAYER("messages.command-categoryxp-only-player", "Only players can use this command."),
+    COMMAND_CATEGORYXP_USAGE("messages.command-categoryxp-usage", "/quests categoryxp <category> <exp|level> <amount>"),
+    COMMAND_CATEGORYXP_INVALID_AMOUNT("messages.command-categoryxp-invalid-amount", "Invalid amount: {amount}"),
+    COMMAND_CATEGORYXP_CATEGORY_NOT_FOUND("messages.command-categoryxp-category-not-found", "Category not found: {category}"),
+    COMMAND_CATEGORYXP_DATA_NOT_LOADED("messages.command-categoryxp-data-not-loaded", "Player data not loaded."),
+    COMMAND_CATEGORYXP_NO_XP_SYSTEM("messages.command-categoryxp-no-xp-system", "This category does not have an XP system."),
+    COMMAND_CATEGORYXP_GIVEN_EXP("messages.command-categoryxp-given-exp", "You have received {amount} experience in category {category}."),
+    COMMAND_CATEGORYXP_GIVEN_LEVEL("messages.command-categoryxp-given-level", "You have received {amount} levels in category {category}."),
+    COMMAND_CATEGORYXP_INVALID_TYPE("messages.command-categoryxp-invalid-type", "Invalid type: {type}. Use 'exp' or 'level'."),
 
     // Title
     TITLE_QUEST_START_TITLE("titles.quest-start.title"),

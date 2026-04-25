@@ -19,11 +19,14 @@ import java.util.Objects;
 @Modern(type = Modern.Type.FULL)
 @NullMarked
 public final class Category {
+    // Sistema de experiencia y niveles por categoría
+    private CategoryXP categoryXP;
 
     private static final String PERMISSION_PREFIX = "quests.category.";
 
     private final String id;
     private final @Nullable String guiName;
+    private String uniqueName;
     private final List<String> registeredQuestIds;
     private final boolean permissionRequired;
     private final boolean hidden;
@@ -39,9 +42,37 @@ public final class Category {
     public Category(final String id, final @Nullable String guiName, final boolean permissionRequired, final boolean hidden) {
         this.id = Objects.requireNonNull(id, "id cannot be null");
         this.guiName = guiName;
+        this.uniqueName = null;
         this.registeredQuestIds = new ArrayList<>();
         this.permissionRequired = permissionRequired;
         this.hidden = hidden;
+        this.categoryXP = null;
+    }
+        /**
+         * Set the unique name for this category.
+         */
+        public void setUniqueName(String uniqueName) {
+            this.uniqueName = uniqueName;
+        }
+
+        /**
+         * Get the unique name for this category.
+         */
+        public @Nullable String getUniqueName() {
+            return this.uniqueName;
+        }
+    /**
+     * Asigna un sistema de experiencia a la categoría.
+     */
+    public void setCategoryXP(CategoryXP categoryXP) {
+        this.categoryXP = categoryXP;
+    }
+
+    /**
+     * Obtiene el sistema de experiencia de la categoría.
+     */
+    public CategoryXP getCategoryXP() {
+        return this.categoryXP;
     }
 
     /**

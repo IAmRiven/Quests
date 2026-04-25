@@ -76,7 +76,7 @@ repositories {
 
 dependencies {
     // Quests common module
-    compileOnlyProject(":common")
+    implementation(project(":common"))
 
     // Paper
     compileOnlyServer("io.papermc.paper:paper-api:26.1.1.build.29-alpha")
@@ -188,6 +188,7 @@ tasks.shadowJar {
     transform(ServiceFileTransformer::class.java)
 
     archiveClassifier.set(null as String?)
+    archiveBaseName.set("Quests")
 }
 
 // Moved it here for readability reasons

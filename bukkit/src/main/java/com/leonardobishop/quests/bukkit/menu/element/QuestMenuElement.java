@@ -76,22 +76,27 @@ public class QuestMenuElement extends MenuElement {
         Map<String, String> placeholders = new HashMap<>();
         ItemStack display;
         if (status == QuestStartResult.QUEST_LOCKED) {
-            List<String> quests = new ArrayList<>();
-            for (String requirement : quest.getRequirements()) {
-                Quest requirementQuest = plugin.getQuestManager().getQuestById(requirement);
-                if (requirementQuest == null) continue;
-                if (!owner.getQuestProgressFile().hasQuestProgress(requirementQuest) ||
-                        !owner.getQuestProgressFile().getQuestProgress(requirementQuest).isCompletedBefore()) {
-                    quests.add(Chat.legacyStrip(plugin.getQItemStackRegistry().getQuestItemStack(requirementQuest).getName()));
-                }
+            // Mostrar todos los requisitos con formato detallado
+            List<String> reqDisplay;
+            try {
+                // Usa el método de QItemStack para formatear los requisitos
+                java.lang.reflect.Method formatMethod = qItemStack.getClass().getDeclaredMethod("formatRequirementsForDisplay", com.leonardobishop.quests.common.quest.Quest.class, org.bukkit.entity.Player.class);
+                formatMethod.setAccessible(true);
+                org.bukkit.entity.Player bukkitPlayer = org.bukkit.Bukkit.getPlayer(owner.getPlayerUUID());
+                reqDisplay = (List<String>) formatMethod.invoke(qItemStack, quest, bukkitPlayer);
+            } catch (Exception e) {
+                reqDisplay = new ArrayList<>();
             }
+            String requirementsBlock = String.join("\n", reqDisplay);
             placeholders.put("{quest}", Chat.legacyStrip(qItemStack.getName()));
             placeholders.put("{questcolored}", qItemStack.getName());
             placeholders.put("{questid}", quest.getId());
-            if (quests.size() > 1 && plugin.getConfig().getBoolean("options.gui-truncate-requirements", true)) {
-                placeholders.put("{requirements}", quests.get(0) + Messages.UI_PLACEHOLDERS_TRUNCATED.getMessageLegacyColor().replace("{amount}", String.valueOf(quests.size() - 1)));
+            // Si hay requisitos, los insertamos línea por línea
+            if (!reqDisplay.isEmpty()) {
+                // Si el lore tiene solo {requirements}, se reemplazará por todas las líneas
+                placeholders.put("{requirements}", String.join("\n", reqDisplay));
             } else {
-                placeholders.put("{requirements}", String.join(", ", quests));
+                placeholders.put("{requirements}", "");
             }
             if (plugin.getQItemStackRegistry().hasQuestLockedItemStack(quest)) {
                 display = plugin.getQItemStackRegistry().getQuestLockedItemStack(quest);

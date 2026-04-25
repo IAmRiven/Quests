@@ -206,7 +206,15 @@ public class AdminDebugReportCommandHandler implements CommandHandler {
                 try {
                     Field tasksField = quest.getClass().getDeclaredField("tasks");
                     tasksField.setAccessible(true);
-                    Map<String, Task> tasksMap = (Map<String, Task>) tasksField.get(quest);
+                    Object tasksObj = tasksField.get(quest);
+                    Map<String, Task> tasksMap = new HashMap<>();
+                    if (tasksObj instanceof Map<?, ?> rawMap) {
+                        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+                            if (entry.getKey() instanceof String key && entry.getValue() instanceof Task task) {
+                                tasksMap.put(key, task);
+                            }
+                        }
+                    }
                     Map<String, Object> tasksValues = new HashMap<>();
                     for (Map.Entry<String, Task> taskEntry : tasksMap.entrySet()) {
                         Task task = taskEntry.getValue();

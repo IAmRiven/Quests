@@ -60,6 +60,9 @@ tasks.register<Jar>("allJar") {
         }
     }
 
+    // Soluciona el error de duplicados al crear el JAR combinado
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
     archiveBaseName = "Quests"
 }
 

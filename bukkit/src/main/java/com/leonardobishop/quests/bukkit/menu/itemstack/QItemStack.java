@@ -26,6 +26,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.util.UUID;
+
+import com.leonardobishop.quests.common.quest.Category;
+import com.leonardobishop.quests.common.quest.CategoryXP;
 public class QItemStack {
 
     private final BukkitQuestsPlugin plugin;
@@ -98,15 +102,44 @@ public class QItemStack {
         tempLore.addAll(globalLoreAppendNormal);
 
         Player player = Bukkit.getPlayer(qPlayer.getPlayerUUID());
+
+        // --- BEGIN: Insert formatted requirements into lore ---
+        List<String> reqDisplay = formatRequirementsForDisplay(quest, player);
+        String requirementsBlock = String.join("\n", reqDisplay);
+        // --- END ---
+
+        // Reemplazar {requirements} en el lore por todas las líneas de requisitos
+        List<String> replacedLore = new ArrayList<>();
+        for (String s : tempLore) {
+            // Elimina todos los códigos de color y espacios para comparar
+            String trimmed = s.replaceAll("§[0-9A-FK-ORa-fk-or]", "").replaceAll("&[0-9A-FK-ORa-fk-or]", "").replaceAll("\\s+", "").toLowerCase();
+            // Si la línea es solo {requirements} (con o sin color y espacios)
+            if (trimmed.equals("{requirements}")) {
+                if (!reqDisplay.isEmpty()) {
+                    replacedLore.addAll(reqDisplay);
+                }
+                // No agregues la línea original
+            } else if (s.contains("{requirements}")) {
+                // Si está embebido, reemplaza el placeholder por el bloque completo (todas las líneas unidas por salto de línea)
+                if (!reqDisplay.isEmpty()) {
+                    replacedLore.add(s.replace("{requirements}", String.join("\n", reqDisplay)));
+                } else {
+                    replacedLore.add(s.replace("{requirements}", ""));
+                }
+            } else {
+                replacedLore.add(s);
+            }
+        }
+
         if (qPlayer.hasStartedQuest(quest)) {
             boolean tracked = quest.getId().equals(qPlayer.getPlayerPreferences().getTrackedQuestId());
             if (!plugin.getQuestsConfig().getBoolean("options.global-task-configuration-override")|| globalLoreAppendStarted.isEmpty()) {
-                tempLore.addAll(loreStarted);
+                replacedLore.addAll(loreStarted);
             }
             if (tracked) {
-                tempLore.addAll(globalLoreAppendTracked);
+                replacedLore.addAll(globalLoreAppendTracked);
             } else {
-                tempLore.addAll(globalLoreAppendStarted);
+                replacedLore.addAll(globalLoreAppendStarted);
             }
             ism.addEnchant(Enchantment.KNOCKBACK, 1, true);
             try {
@@ -114,24 +147,91 @@ public class QItemStack {
                 ism.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             } catch (Exception ignored) { }
         } else {
-            tempLore.addAll(globalLoreAppendNotStarted);
+            replacedLore.addAll(globalLoreAppendNotStarted);
         }
         if (plugin.getQuestsConfig().getBoolean("options.gui-use-placeholderapi")) {
             ism.setDisplayName(plugin.getPlaceholderAPIProcessor().apply(player, ism.getDisplayName()));
         }
+        List<String> finalLore = new ArrayList<>();
         if (questProgress != null) {
-            for (String s : tempLore) {
+            for (String s : replacedLore) {
                 s = processPlaceholders(plugin, s, questProgress);
                 s = processTimeLeft(s, quest, qPlayer.getQuestProgressFile());
                 if (plugin.getQuestsConfig().getBoolean("options.gui-use-placeholderapi")) {
                     s = plugin.getPlaceholderAPIProcessor().apply(player, s);
                 }
-                formattedLore.add(s);
+                finalLore.add(s);
             }
+        } else {
+            finalLore.addAll(replacedLore);
         }
-        ism.setLore(formattedLore);
+        ism.setLore(finalLore);
         is.setItemMeta(ism);
         return is;
+    }
+
+    /**
+     * Formats quest requirements (including categorylevel/xp) for display in the lore.
+     */
+    private List<String> formatRequirementsForDisplay(Quest quest, Player player) {
+        List<String> out = new ArrayList<>();
+        List<String> reqs = quest.getRequirements();
+        if (reqs != null && !reqs.isEmpty()) {
+            for (int i = 0; i < reqs.size(); i++) {
+                String req = reqs.get(i);
+                String msg = null;
+                if (req.startsWith("categorylevel:")) {
+                    String[] parts = req.split(":");
+                    if (parts.length == 3) {
+                        String catId = parts[1];
+                        String lvl = parts[2];
+                        Category cat = plugin.getQuestManager().getCategoryById(catId);
+                        String catUniqueName = catId;
+                        if (cat != null) {
+                            String maybeUnique = cat.getUniqueName();
+                            if (maybeUnique != null) catUniqueName = maybeUnique;
+                        }
+                        msg = "Nivel de " + catUniqueName + " requerido: " + lvl;
+                    }
+                } else if (req.startsWith("categoryxp:")) {
+                    String[] parts = req.split(":");
+                    if (parts.length == 3) {
+                        String catId = parts[1];
+                        String xp = parts[2];
+                        Category cat = plugin.getQuestManager().getCategoryById(catId);
+                        String catUniqueName = catId;
+                        if (cat != null) {
+                            String maybeUnique = cat.getUniqueName();
+                            if (maybeUnique != null) catUniqueName = maybeUnique;
+                        }
+                        msg = "XP de " + catUniqueName + " requerida: " + xp;
+                    }
+                } else {
+                    Quest reqQuest = plugin.getQuestManager().getQuestById(req);
+                    String reqDisplayName = null;
+                    if (reqQuest != null) {
+                        QItemStack reqQItemStack = plugin.getQItemStackRegistry().getQuestItemStack(reqQuest);
+                        if (reqQItemStack != null && reqQItemStack.getName() != null) {
+                            reqDisplayName = Chat.legacyStrip(reqQItemStack.getName());
+                        }
+                    }
+                    if (reqDisplayName == null && reqQuest != null) {
+                        reqDisplayName = reqQuest.getId();
+                    } else if (reqDisplayName == null) {
+                        reqDisplayName = req;
+                    }
+                    msg = reqDisplayName;
+                }
+                if (msg != null) {
+                    // Añade coma si no es el último requisito
+                    if (i < reqs.size() - 1) {
+                        msg = msg + ",";
+                    }
+                    out.add(Chat.legacyColor(msg));
+                }
+            }
+        }
+        return out;
     }
 
     public static final Pattern TASK_PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+):(progress|goal|complete|id)}");

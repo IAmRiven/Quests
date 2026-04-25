@@ -263,7 +263,33 @@ public class NormalQuestController implements QuestController {
                 vaultReward.give(player);
 
                 for (String s : quest.getRewards()) {
-                    DispatchUtils.dispatchCommand(player, this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, s));
+                    String cmd = this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, s);
+                    if (cmd.toLowerCase().startsWith("categoryxp ")) {
+                        // Sintaxis: categoryxp givexp <categoria> <jugador> <cantidad>
+                        //           categoryxp givelevel <categoria> <jugador> <cantidad>
+                        String[] args = cmd.split(" ");
+                        if (args.length >= 5) {
+                            String action = args[1];
+                            String categoryId = args[2];
+                            String targetPlayer = args[3];
+                            int amount;
+                            try {
+                                amount = Integer.parseInt(args[4]);
+                            } catch (NumberFormatException e) {
+                                continue;
+                            }
+                            Category category = this.plugin.getQuestManager().getCategoryById(categoryId);
+                            if (category != null && category.getCategoryXP() != null) {
+                                if (action.equalsIgnoreCase("givexp")) {
+                                    category.getCategoryXP().addExp(targetPlayer, amount);
+                                } else if (action.equalsIgnoreCase("givelevel")) {
+                                    category.getCategoryXP().addLevel(targetPlayer, amount);
+                                }
+                            }
+                        }
+                    } else {
+                        DispatchUtils.dispatchCommand(player, cmd);
+                    }
                 }
             });
             Messages.send(questFinishEvent.getQuestFinishMessage(), player);

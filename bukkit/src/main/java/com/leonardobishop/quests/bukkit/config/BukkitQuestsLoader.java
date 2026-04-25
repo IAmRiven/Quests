@@ -127,6 +127,45 @@ public class BukkitQuestsLoader implements QuestsLoader {
             boolean hidden = categories.getBoolean(id + ".hidden", false);
 
             Category category = new Category(id, guiName, permissionRequired, hidden);
+            // Cargar unique_name si existe
+            String uniqueName = categories.getString(id + ".unique_name", null);
+            if (uniqueName != null) {
+                category.setUniqueName(uniqueName);
+            }
+            // Buscar xp dentro de display
+            org.bukkit.configuration.ConfigurationSection displaySec = categories.getConfigurationSection(id + ".display");
+            if (displaySec != null && displaySec.isConfigurationSection("xp")) {
+                org.bukkit.configuration.ConfigurationSection xpSec = displaySec.getConfigurationSection("xp");
+                int maxLevel = xpSec.getInt("max-level", 1);
+                int initialLevel = xpSec.getInt("initial-level", 1);
+                int[] expPerLevel = new int[0];
+                // Check for exp-table-file first
+                String expTableFile = xpSec.getString("exp-table-file", null);
+                if (expTableFile != null && !expTableFile.isEmpty()) {
+                    // Try to load from exp-tables folder
+                    File expTable = new File(plugin.getDataFolder(), "exp-tables/" + expTableFile);
+                    if (!expTable.exists()) {
+                        // Try resources path (for dev/test)
+                        expTable = new File(root, "bukkit/exp-tables/" + expTableFile);
+                    }
+                    if (expTable.exists()) {
+                        try {
+                            YamlConfiguration expConfig = YamlConfiguration.loadConfiguration(expTable);
+                            java.util.List<Integer> expList = expConfig.getIntegerList("exp-per-level");
+                            expPerLevel = expList.stream().mapToInt(Integer::intValue).toArray();
+                        } catch (Exception e) {
+                            questsLogger.warning("Could not load exp-table-file for category '" + id + "': " + e.getMessage());
+                        }
+                    } else {
+                        questsLogger.warning("exp-table-file not found for category '" + id + "': " + expTable.getPath());
+                    }
+                } else {
+                    java.util.List<Integer> expList = xpSec.getIntegerList("exp-per-level");
+                    expPerLevel = expList.stream().mapToInt(Integer::intValue).toArray();
+                }
+                com.leonardobishop.quests.common.quest.CategoryXP categoryXP = new com.leonardobishop.quests.common.quest.CategoryXP(id, maxLevel, initialLevel, expPerLevel);
+                category.setCategoryXP(categoryXP);
+            }
             questManager.registerCategory(category);
             qItemStackRegistry.register(category, displayItem);
         }
@@ -433,6 +472,10 @@ public class BukkitQuestsLoader implements QuestsLoader {
         for (Map.Entry<String, Quest> loadedQuest : pathToQuest.entrySet()) {
             List<ConfigProblem> problems = new ArrayList<>();
             for (String req : loadedQuest.getValue().getRequirements()) {
+                // Ignore special requirements like categorylevel: or categoryxp:
+                if (req.startsWith("categorylevel:") || req.startsWith("categoryxp:")) {
+                    continue;
+                }
                 if (questManager.getQuestById(req) == null) {
                     problems.add(new ConfigProblem(ConfigProblem.ConfigProblemType.WARNING,
                             ConfigProblemDescriptions.UNKNOWN_REQUIREMENT.getDescription(req),

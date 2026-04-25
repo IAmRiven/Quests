@@ -16,6 +16,7 @@ import com.leonardobishop.quests.common.quest.Task;
 import me.clip.placeholderapi.expansion.Cacheable;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
+import com.leonardobishop.quests.bukkit.placeholder.CategoryXPPlaceholder;
 import org.bukkit.inventory.ItemStack;
 
 import java.text.SimpleDateFormat;
@@ -64,6 +65,46 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
 
     @Override
     public String onPlaceholderRequest(Player p, String params) {
+        // %quests_categoryxp:<cat>_bar%, _level, _exp, _maxlevel, _maxexp
+        if (params.toLowerCase().startsWith("categoryxp:")) {
+            String[] split = params.split(":", 2);
+            if (split.length == 2) {
+                String value = split[1].toLowerCase();
+                String catId;
+                if (value.endsWith("_bar")) {
+                    catId = split[1].substring(0, split[1].length() - 4);
+                    Category category = plugin.getQuestManager().getCategoryById(catId);
+                    return CategoryXPPlaceholder.getCategoryXPBar(p, category);
+                } else if (value.endsWith("_level")) {
+                    catId = split[1].substring(0, split[1].length() - 6);
+                    Category category = plugin.getQuestManager().getCategoryById(catId);
+                    if (category == null || category.getCategoryXP() == null) return "0";
+                    String playerId = p.getUniqueId().toString();
+                    return String.valueOf(category.getCategoryXP().getLevel(playerId));
+                } else if (value.endsWith("_exp")) {
+                    catId = split[1].substring(0, split[1].length() - 4);
+                    Category category = plugin.getQuestManager().getCategoryById(catId);
+                    if (category == null || category.getCategoryXP() == null) return "0";
+                    String playerId = p.getUniqueId().toString();
+                    return String.valueOf(category.getCategoryXP().getExp(playerId));
+                } else if (value.endsWith("_maxlevel")) {
+                    catId = split[1].substring(0, split[1].length() - 9);
+                    Category category = plugin.getQuestManager().getCategoryById(catId);
+                    if (category == null || category.getCategoryXP() == null) return "0";
+                    return String.valueOf(category.getCategoryXP().getMaxLevel());
+                } else if (value.endsWith("_maxexp")) {
+                    catId = split[1].substring(0, split[1].length() - 7);
+                    Category category = plugin.getQuestManager().getCategoryById(catId);
+                    if (category == null || category.getCategoryXP() == null) return "0";
+                    String playerId = p.getUniqueId().toString();
+                    int level = category.getCategoryXP().getLevel(playerId);
+                    int relLevel = level - category.getCategoryXP().getInitialLevel();
+                    int[] expPerLevel = category.getCategoryXP().getExpPerLevel();
+                    int expToNext = (relLevel < expPerLevel.length && relLevel >= 0) ? expPerLevel[relLevel] : 1;
+                    return String.valueOf(expToNext);
+                }
+            }
+        }
         if (p == null || !p.isOnline()) return null;
         if (cache.containsKey(p.getName()) && cache.get(p.getName()).containsKey(params))
             return cache.get(p.getName()).get(params);

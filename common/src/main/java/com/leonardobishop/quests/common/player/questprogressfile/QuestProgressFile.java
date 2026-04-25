@@ -262,23 +262,56 @@ public final class QuestProgressFile {
     // TODO possibly move this
     @Contract(pure = true)
     public boolean hasMetRequirements(final Quest quest) {
-        for (final String requiredQuestId : quest.getRequirements()) {
-            final QuestProgress requiredQuestProgress = this.questProgressMap.get(requiredQuestId);
-            if (requiredQuestProgress == null || !requiredQuestProgress.isCompletedBefore()) {
-                // if we decide to change the method return type to states like "DOES_NOT_EXIST"
-                // or "COMPLETED_BEFORE" we will need to change the quest existance check order
-                return false;
-            }
-
-            final Quest requiredQuest = this.plugin.getQuestManager().getQuestById(requiredQuestId);
-            if (requiredQuest == null) {
-                // TODO not sure if we actually need this check however probably
-                //      forcing the server owner to fix the quest options instead
-                //      of just ignoring the fact it's broken is better?
-                return false;
+        for (final String req : quest.getRequirements()) {
+            if (req.startsWith("categorylevel:")) {
+                // Sintaxis: categorylevel:<categoryId>:<level>
+                String[] parts = req.split(":");
+                if (parts.length == 3) {
+                    String categoryId = parts[1];
+                    int requiredLevel;
+                    try {
+                        requiredLevel = Integer.parseInt(parts[2]);
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+                    // Obtener nivel del jugador en la categoría
+                    var category = plugin.getQuestManager().getCategoryById(categoryId);
+                    if (category == null || category.getCategoryXP() == null) return false;
+                    int playerLevel = category.getCategoryXP().getLevel(playerUUID.toString());
+                    if (playerLevel < requiredLevel) return false;
+                } else {
+                    return false;
+                }
+            } else if (req.startsWith("categoryxp:")) {
+                // Sintaxis: categoryxp:<categoryId>:<xp>
+                String[] parts = req.split(":");
+                if (parts.length == 3) {
+                    String categoryId = parts[1];
+                    int requiredXp;
+                    try {
+                        requiredXp = Integer.parseInt(parts[2]);
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+                    var category = plugin.getQuestManager().getCategoryById(categoryId);
+                    if (category == null || category.getCategoryXP() == null) return false;
+                    int playerXp = category.getCategoryXP().getExp(playerUUID.toString());
+                    if (playerXp < requiredXp) return false;
+                } else {
+                    return false;
+                }
+            } else {
+                // Requisito normal: quest completada
+                final QuestProgress requiredQuestProgress = this.questProgressMap.get(req);
+                if (requiredQuestProgress == null || !requiredQuestProgress.isCompletedBefore()) {
+                    return false;
+                }
+                final Quest requiredQuest = this.plugin.getQuestManager().getQuestById(req);
+                if (requiredQuest == null) {
+                    return false;
+                }
             }
         }
-
         return true;
     }
 

@@ -25,6 +25,7 @@ public class QuestsCommandSwitcher extends CommandSwitcher implements TabExecuto
 
         super.subcommands.put("quest", new QuestCommandHandler(plugin));
         super.subcommands.put("category", new CategoryCommandHandler(plugin));
+        super.subcommands.put("categoryxp", new CategoryXPCommandHandler(plugin));
         super.subcommands.put("random", new RandomCommandHandler(plugin));
         super.subcommands.put("started", new StartedCommandHandler(plugin));
         super.subcommands.put("admin", new AdminCommandSwitcher(plugin));
@@ -34,6 +35,7 @@ public class QuestsCommandSwitcher extends CommandSwitcher implements TabExecuto
 
         super.aliases.put("q", "quest");
         super.aliases.put("c", "category");
+        super.aliases.put("cxp", "categoryxp");
         super.aliases.put("a", "admin");
     }
 

@@ -23,6 +23,18 @@ categories:
         - "&csection and all the comments so you can"
         - "&cmake the most of this plugin."
       type: "WATER_BUCKET"
+      # XP/Level system example using external exp-table-file:
+      xp:
+        max-level: 6
+        initial-level: 1
+        exp-table-file: mining.yml  # Looks for exp-tables/mining.yml
+        # You can use 'exp-per-level' here instead for inline config
+        # exp-per-level:
+        #   - 100
+        #   - 200
+        #   - 300
+        #   - 400
+        #   - 500
   permissionexample:
     display:
       name: "&cPermission Example"
