@@ -91,18 +91,41 @@ public class QuestMenuElement extends MenuElement {
             placeholders.put("{quest}", Chat.legacyStrip(qItemStack.getName()));
             placeholders.put("{questcolored}", qItemStack.getName());
             placeholders.put("{questid}", quest.getId());
-            // Si hay requisitos, los insertamos línea por línea
-            if (!reqDisplay.isEmpty()) {
-                // Si el lore tiene solo {requirements}, se reemplazará por todas las líneas
-                placeholders.put("{requirements}", String.join("\n", reqDisplay));
-            } else {
-                placeholders.put("{requirements}", "");
-            }
+            // Si hay requisitos, los insertamos línea por línea en el lore del item bloqueado
             if (plugin.getQItemStackRegistry().hasQuestLockedItemStack(quest)) {
-                display = plugin.getQItemStackRegistry().getQuestLockedItemStack(quest);
+                display = plugin.getQItemStackRegistry().getQuestLockedItemStack(quest).clone();
             } else {
-                display = config.getItem("gui.quest-locked-display");
+                display = config.getItem("gui.quest-locked-display").clone();
             }
+
+            // Expandir {requirements} en múltiples líneas de lore (Bukkit no soporta saltos de línea en una sola entrada de lore)
+            try {
+                org.bukkit.inventory.meta.ItemMeta dm = display.getItemMeta();
+                List<String> lore = dm.getLore();
+                List<String> newLore = new ArrayList<>();
+                if (lore != null) {
+                    for (String line : lore) {
+                        String trimmed = line.replaceAll("§[0-9A-FK-ORa-fk-or]", "").replaceAll("&[0-9A-FK-ORa-fk-or]", "").replaceAll("\\s+", "").toLowerCase();
+                        if (trimmed.equals("{requirements}")) {
+                            if (!reqDisplay.isEmpty()) {
+                                newLore.addAll(reqDisplay);
+                            }
+                        } else if (line.contains("{requirements}")) {
+                            if (!reqDisplay.isEmpty()) {
+                                for (String reqLine : reqDisplay) {
+                                    newLore.add(line.replace("{requirements}", reqLine));
+                                }
+                            } else {
+                                newLore.add(line.replace("{requirements}", ""));
+                            }
+                        } else {
+                            newLore.add(line);
+                        }
+                    }
+                }
+                dm.setLore(newLore);
+                display.setItemMeta(dm);
+            } catch (Exception ignored) { }
         } else if (status == QuestStartResult.QUEST_ALREADY_COMPLETED) {
             placeholders.put("{quest}", Chat.legacyStrip(qItemStack.getName()));
             placeholders.put("{questcolored}", qItemStack.getName());

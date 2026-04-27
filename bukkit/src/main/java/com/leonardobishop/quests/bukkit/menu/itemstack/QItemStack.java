@@ -120,9 +120,11 @@ public class QItemStack {
                 }
                 // No agregues la línea original
             } else if (s.contains("{requirements}")) {
-                // Si está embebido, reemplaza el placeholder por el bloque completo (todas las líneas unidas por salto de línea)
+                // Si está embebido, inserta una línea por cada requisito, reemplazando el placeholder
                 if (!reqDisplay.isEmpty()) {
-                    replacedLore.add(s.replace("{requirements}", String.join("\n", reqDisplay)));
+                    for (String reqLine : reqDisplay) {
+                        replacedLore.add(s.replace("{requirements}", reqLine));
+                    }
                 } else {
                     replacedLore.add(s.replace("{requirements}", ""));
                 }
@@ -176,9 +178,11 @@ public class QItemStack {
     private List<String> formatRequirementsForDisplay(Quest quest, Player player) {
         List<String> out = new ArrayList<>();
         List<String> reqs = quest.getRequirements();
+        List<String> questReqs = new ArrayList<>();
+        List<String> levelReqs = new ArrayList<>();
+        List<String> xpReqs = new ArrayList<>();
         if (reqs != null && !reqs.isEmpty()) {
-            for (int i = 0; i < reqs.size(); i++) {
-                String req = reqs.get(i);
+            for (String req : reqs) {
                 String msg = null;
                 if (req.startsWith("categorylevel:")) {
                     String[] parts = req.split(":");
@@ -191,7 +195,10 @@ public class QItemStack {
                             String maybeUnique = cat.getUniqueName();
                             if (maybeUnique != null) catUniqueName = maybeUnique;
                         }
-                        msg = "Nivel de " + catUniqueName + " requerido: " + lvl;
+                        msg = plugin.getQuestsConfig().getString("messages.quest-requirement-categorylevel", "&7• &eNivel en la categoría: &6{level}")
+                                .replace("{category_unique_name}", catUniqueName)
+                                .replace("{level}", lvl);
+                        levelReqs.add(Chat.legacyColor(msg));
                     }
                 } else if (req.startsWith("categoryxp:")) {
                     String[] parts = req.split(":");
@@ -204,7 +211,10 @@ public class QItemStack {
                             String maybeUnique = cat.getUniqueName();
                             if (maybeUnique != null) catUniqueName = maybeUnique;
                         }
-                        msg = "XP de " + catUniqueName + " requerida: " + xp;
+                        msg = plugin.getQuestsConfig().getString("messages.quest-requirement-categoryxp", "&7• &eExperiencia en la categoría: &6{xp}")
+                                .replace("{category_unique_name}", catUniqueName)
+                                .replace("{xp}", xp);
+                        xpReqs.add(Chat.legacyColor(msg));
                     }
                 } else {
                     Quest reqQuest = plugin.getQuestManager().getQuestById(req);
@@ -220,16 +230,33 @@ public class QItemStack {
                     } else if (reqDisplayName == null) {
                         reqDisplayName = req;
                     }
-                    msg = reqDisplayName;
-                }
-                if (msg != null) {
-                    // Añade coma si no es el último requisito
-                    if (i < reqs.size() - 1) {
-                        msg = msg + ",";
-                    }
-                    out.add(Chat.legacyColor(msg));
+                    msg = plugin.getQuestsConfig().getString("messages.quest-requirement-quest", "&7• &e{quest}")
+                            .replace("{quest}", reqDisplayName);
+                    questReqs.add(Chat.legacyColor(msg));
                 }
             }
+        }
+        // Mostrar siempre el grupo de misiones
+        String headerQuests = plugin.getQuestsConfig().getString("messages.quest-requirements-header-quests", "Requisitos de misiones:");
+        out.add(Chat.legacyColor(headerQuests));
+        if (!questReqs.isEmpty()) {
+            out.addAll(questReqs);
+        } else {
+            out.add(Chat.legacyColor(plugin.getQuestsConfig().getString("messages.quest-requirements-none", "Ningún requisito")));
+        }
+        // Grupo de nivel
+        if (!levelReqs.isEmpty()) {
+            out.add(" ");
+            String headerLevel = plugin.getQuestsConfig().getString("messages.quest-requirements-header-categorylevel", "Requisitos de nivel:");
+            out.add(Chat.legacyColor(headerLevel));
+            out.addAll(levelReqs);
+        }
+        // Grupo de experiencia
+        if (!xpReqs.isEmpty()) {
+            out.add(" ");
+            String headerXP = plugin.getQuestsConfig().getString("messages.quest-requirements-header-categoryxp", "Requisitos de experiencia:");
+            out.add(Chat.legacyColor(headerXP));
+            out.addAll(xpReqs);
         }
         return out;
     }
