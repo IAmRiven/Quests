@@ -47,6 +47,27 @@ public class CategoryXP {
         // playerExp.put(playerId, 0);
     }
 
+    /**
+     * Establece el nivel absoluto de un jugador para esta categoría.
+     * @param playerId id del jugador (UUID como String)
+     * @param level nivel a asignar
+     */
+    public void setLevel(String playerId, int level) {
+        if (level < initialLevel) level = initialLevel;
+        if (level > maxLevel) level = maxLevel;
+        playerLevels.put(playerId, level);
+    }
+
+    /**
+     * Establece la experiencia absoluta de un jugador para esta categoría.
+     * @param playerId id del jugador (UUID como String)
+     * @param exp experiencia a asignar (no negativa)
+     */
+    public void setExp(String playerId, int exp) {
+        if (exp < 0) exp = 0;
+        playerExp.put(playerId, exp);
+    }
+
     public String getCategoryId() {
         return categoryId;
     }

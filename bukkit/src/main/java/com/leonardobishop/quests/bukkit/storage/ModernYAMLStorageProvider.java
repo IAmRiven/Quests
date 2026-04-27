@@ -4,6 +4,7 @@ import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
 import com.leonardobishop.quests.common.player.QPlayerData;
 import com.leonardobishop.quests.common.player.QPlayerPreferences;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgress;
+import com.leonardobishop.quests.common.quest.Category;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgressFile;
 import com.leonardobishop.quests.common.player.questprogressfile.TaskProgress;
 import com.leonardobishop.quests.common.quest.Quest;
@@ -141,6 +142,27 @@ public final class ModernYAMLStorageProvider implements StorageProvider {
                         questProgressFile.addQuestProgress(questProgress);
                     }
                 }
+                // Cargar niveles y experiencia por categoría si existen
+                final ConfigurationSection categoryXpSection = data.getConfigurationSection("category-xp");
+                if (categoryXpSection != null) {
+                    final Set<String> categoryIds = categoryXpSection.getKeys(false);
+                    for (final String categoryId : categoryIds) {
+                        final ConfigurationSection catSection = categoryXpSection.getConfigurationSection(categoryId);
+                        if (catSection == null) continue;
+                        final int level = catSection.getInt("level", Integer.MIN_VALUE);
+                        final int exp = catSection.getInt("exp", Integer.MIN_VALUE);
+                        final Category category = this.plugin.getQuestManager().getCategoryById(categoryId);
+                        if (category == null) continue;
+                        final var categoryXP = category.getCategoryXP();
+                        if (categoryXP == null) continue;
+                        if (level != Integer.MIN_VALUE) {
+                            categoryXP.setLevel(uuidString, level);
+                        }
+                        if (exp != Integer.MIN_VALUE) {
+                            categoryXP.setExp(uuidString, exp);
+                        }
+                    }
+                }
             } else {
                 this.plugin.getQuestsLogger().debug("Player " + uuidString + " does not have a quest progress file.");
             }
@@ -199,6 +221,15 @@ public final class ModernYAMLStorageProvider implements StorageProvider {
                     data.set("quest-progress." + questId + ".task-progress." + taskId + ".completed", taskProgress.isCompleted());
                     data.set("quest-progress." + questId + ".task-progress." + taskId + ".progress", taskProgress.getProgress());
                 }
+            }
+
+            // Guardar niveles/exp de categoría para este jugador
+            final java.util.List<Category> categories = this.plugin.getQuestManager().getCategories();
+            for (final Category category : categories) {
+                final var categoryXP = category.getCategoryXP();
+                if (categoryXP == null) continue;
+                data.set("category-xp." + category.getId() + ".level", categoryXP.getLevel(uuidString));
+                data.set("category-xp." + category.getId() + ".exp", categoryXP.getExp(uuidString));
             }
 
             this.plugin.getQuestsLogger().debug("Saving player data file for " + uuidString + " to disk.");
