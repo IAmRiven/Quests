@@ -112,7 +112,7 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
         String[] args = params.split("_", 4);
         if (args.length < 1) return "Invalid Placeholder";
 
-        final boolean save = args[args.length - 1].toLowerCase().equals("cache");
+        final boolean save = args[args.length - 1].equalsIgnoreCase("cache");
         if (save) args = Arrays.copyOf(args, args.length - 1);
 
         final QPlayer qPlayer = plugin.getPlayerManager().getPlayer(p.getUniqueId());
@@ -145,6 +145,7 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
                 case "s":
                     //TODO cache started quests somewhere, or make a effective started method
                     final List<Quest> listStarted = qPlayer.getEffectiveStartedQuests();
+                    listStarted.removeIf(quest -> !quest.doesCountTowardsLimit());
                     result = (args.length == 1 ? String.valueOf(listStarted.size()) : parseList(listStarted, args[1], split));
                     break;
                 case "limit":
@@ -331,16 +332,19 @@ public class QuestsPlaceholders extends PlaceholderExpansion implements Cacheabl
                             case "completed":
                             case "c":
                                 final List<Quest> listCompleted = getCategoryQuests(qPlayer, category, QuestProgressFile.QuestsProgressFilter.COMPLETED);
+                                listCompleted.removeIf(q -> !q.doesCountTowardsCompleted());
                                 result = (args.length == 2 ? String.valueOf(listCompleted.size()) : parseList(listCompleted, args[2], split));
                                 break;
                             case "completedbefore":
                             case "cb":
                                 final List<Quest> listCompletedB = getCategoryQuests(qPlayer, category, QuestProgressFile.QuestsProgressFilter.COMPLETED_BEFORE);
+                                listCompletedB.removeIf(q -> !q.doesCountTowardsCompleted());
                                 result = (args.length == 2 ? String.valueOf(listCompletedB.size()) : parseList(listCompletedB, args[2], split));
                                 break;
                             case "started":
                             case "s":
                                 final List<Quest> listStarted = getCategoryQuests(qPlayer, category, QuestProgressFile.QuestsProgressFilter.STARTED);
+                                listStarted.removeIf(q -> !q.doesCountTowardsLimit());
                                 result = (args.length == 2 ? String.valueOf(listStarted.size()) : parseList(listStarted, args[2], split));
                                 break;
                             default:
