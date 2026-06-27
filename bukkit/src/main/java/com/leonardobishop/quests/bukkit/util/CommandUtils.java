@@ -4,6 +4,8 @@ import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
 import com.leonardobishop.quests.bukkit.util.chat.Chat;
 import com.leonardobishop.quests.common.config.ConfigProblem;
 import com.leonardobishop.quests.common.player.QPlayer;
+import com.leonardobishop.quests.common.quest.Category;
+import com.leonardobishop.quests.common.quest.Quest;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -187,5 +189,37 @@ public class CommandUtils {
                         plugin.getPlayerManager().dropPlayer(qPlayer.getPlayerUUID());
                     }
                 }));
+    }
+
+    public static void resetCategoryProgressForQuest(final @NotNull BukkitQuestsPlugin plugin, final @NotNull QPlayer qPlayer, final @NotNull Quest quest) {
+        final String categoryId = quest.getCategoryId();
+        if (categoryId == null) {
+            return;
+        }
+
+        final Category category = plugin.getQuestManager().getCategoryById(categoryId);
+        if (category == null || category.getCategoryXP() == null) {
+            return;
+        }
+
+        final String playerId = qPlayer.getPlayerUUID().toString();
+        category.getCategoryXP().setLevel(playerId, category.getCategoryXP().getInitialLevel());
+        category.getCategoryXP().setExp(playerId, 0);
+        qPlayer.getPlayerData().setModified(true);
+    }
+
+    public static void resetAllCategoryProgress(final @NotNull BukkitQuestsPlugin plugin, final @NotNull QPlayer qPlayer) {
+        final String playerId = qPlayer.getPlayerUUID().toString();
+
+        for (final Category category : plugin.getQuestManager().getCategories()) {
+            if (category.getCategoryXP() == null) {
+                continue;
+            }
+
+            category.getCategoryXP().setLevel(playerId, category.getCategoryXP().getInitialLevel());
+            category.getCategoryXP().setExp(playerId, 0);
+        }
+
+        qPlayer.getPlayerData().setModified(true);
     }
 }

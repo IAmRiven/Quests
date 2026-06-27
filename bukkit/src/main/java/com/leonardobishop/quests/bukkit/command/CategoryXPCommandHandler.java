@@ -1,10 +1,10 @@
 package com.leonardobishop.quests.bukkit.command;
 
 import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
+import com.leonardobishop.quests.bukkit.util.CommandUtils;
 import com.leonardobishop.quests.common.player.QPlayer;
 import com.leonardobishop.quests.common.quest.Category;
 import com.leonardobishop.quests.common.quest.CategoryXP;
-import com.leonardobishop.quests.common.quest.CategoryXPManager;
 import com.leonardobishop.quests.bukkit.util.Messages;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -65,9 +65,13 @@ public class CategoryXPCommandHandler implements CommandHandler {
         String playerId = target.getUniqueId().toString();
         if (type.equalsIgnoreCase("exp")) {
             xp.addExp(playerId, amount);
+            qPlayer.getPlayerData().setModified(true);
+            CommandUtils.doSafeSave(this.plugin, qPlayer);
             Messages.COMMAND_CATEGORYXP_GIVEN_EXP.send(sender, "{amount}", String.valueOf(amount), "{category}", categoryId);
         } else if (type.equalsIgnoreCase("level")) {
             xp.addLevel(playerId, amount);
+            qPlayer.getPlayerData().setModified(true);
+            CommandUtils.doSafeSave(this.plugin, qPlayer);
             Messages.COMMAND_CATEGORYXP_GIVEN_LEVEL.send(sender, "{amount}", String.valueOf(amount), "{category}", categoryId);
         } else {
             Messages.COMMAND_CATEGORYXP_INVALID_TYPE.send(sender, "{type}", type);

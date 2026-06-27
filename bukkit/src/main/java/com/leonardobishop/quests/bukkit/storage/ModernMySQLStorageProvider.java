@@ -6,6 +6,7 @@ import com.leonardobishop.quests.common.player.QPlayerPreferences;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgress;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgressFile;
 import com.leonardobishop.quests.common.player.questprogressfile.TaskProgress;
+import com.leonardobishop.quests.common.quest.Category;
 import com.leonardobishop.quests.common.quest.Quest;
 import com.leonardobishop.quests.common.quest.Task;
 import com.leonardobishop.quests.common.storage.StorageProvider;
@@ -65,6 +66,13 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
                     " `value`          VARCHAR(64)   NULL," +
                     " `data_type`      VARCHAR(10)   NULL," +
                     " PRIMARY KEY (`uuid`, `preference_id`));";
+    private static final String CREATE_TABLE_CATEGORY_XP =
+            "CREATE TABLE IF NOT EXISTS `{prefix}category_xp` (" +
+                    " `uuid`         CHAR(36)     NOT NULL," +
+                    " `category_id`  VARCHAR(50)  NOT NULL," +
+                    " `level`        INT          NOT NULL," +
+                    " `exp`          INT          NOT NULL," +
+                    " PRIMARY KEY (`uuid`, `category_id`));";
     private static final String CREATE_TABLE_DATABASE_INFORMATION =
             "CREATE TABLE IF NOT EXISTS `{prefix}database_information` (" +
                     " `key`    VARCHAR(255)  NOT NULL," +
@@ -76,6 +84,8 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
             "SELECT quest_id, started, started_date, completed, completed_before, completion_date FROM `{prefix}quest_progress` WHERE uuid = ?;";
     private static final String SELECT_PLAYER_TASK_PROGRESS =
             "SELECT quest_id, task_id, completed, progress, data_type FROM `{prefix}task_progress` WHERE uuid = ?;";
+    private static final String SELECT_PLAYER_CATEGORY_XP =
+            "SELECT category_id, level, exp FROM `{prefix}category_xp` WHERE uuid = ?;";
     private static final String SELECT_UUID_LIST =
             "SELECT DISTINCT uuid FROM `{prefix}quest_progress`;";
 
@@ -85,6 +95,9 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
     private static final String INSERT_PLAYER_TASK_PROGRESS =
             "INSERT INTO `{prefix}task_progress` (uuid, quest_id, task_id, completed, progress, data_type) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE completed = ?, progress = ?, data_type = ?";
 
+    private static final String INSERT_PLAYER_CATEGORY_XP =
+            "INSERT INTO `{prefix}category_xp` (uuid, category_id, level, exp) VALUES (?, ?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE level = ?, exp = ?;";
     private static final Map<String, Object> ADDITIONAL_PROPERTIES = new HashMap<>() {{
         this.put("cachePrepStmts", true);
         this.put("prepStmtCacheSize", 250);
@@ -187,6 +200,7 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
                 stmt.addBatch(this.prefixer.apply(CREATE_TABLE_QUEST_PROGRESS));
                 stmt.addBatch(this.prefixer.apply(CREATE_TABLE_TASK_PROGRESS));
                 stmt.addBatch(this.prefixer.apply(CREATE_TABLE_PLAYER_PREFERENCES));
+                stmt.addBatch(this.prefixer.apply(CREATE_TABLE_CATEGORY_XP));
                 stmt.addBatch(this.prefixer.apply(CREATE_TABLE_DATABASE_INFORMATION));
 
                 stmt.executeBatch();
@@ -324,6 +338,24 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
             for (final QuestProgress questProgress : allQuestProgress) {
                 questProgressFile.addQuestProgress(questProgress);
             }
+
+            try (final PreparedStatement stmt = conn.prepareStatement(this.prefixer.apply(SELECT_PLAYER_CATEGORY_XP))) {
+                stmt.setString(1, uuidString);
+
+                try (final ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        final String categoryId = rs.getString(1);
+                        final Category category = this.plugin.getQuestManager().getCategoryById(categoryId);
+
+                        if (category == null || category.getCategoryXP() == null) {
+                            continue;
+                        }
+
+                        category.getCategoryXP().setLevel(uuidString, rs.getInt(2));
+                        category.getCategoryXP().setExp(uuidString, rs.getInt(3));
+                    }
+                }
+            }
         } catch (final SQLException e) {
             this.plugin.getLogger().log(Level.SEVERE, "Failed to load player data for " + uuidString + ".", e);
             return null;
@@ -345,7 +377,8 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
 
         try (final Connection connection = this.ds.getConnection();
              final PreparedStatement questStmt = connection.prepareStatement(this.prefixer.apply(INSERT_PLAYER_QUEST_PROGRESS));
-             final PreparedStatement taskStmt = connection.prepareStatement(this.prefixer.apply(INSERT_PLAYER_TASK_PROGRESS))) {
+             final PreparedStatement taskStmt = connection.prepareStatement(this.prefixer.apply(INSERT_PLAYER_TASK_PROGRESS));
+             final PreparedStatement categoryXpStmt = connection.prepareStatement(this.prefixer.apply(INSERT_PLAYER_CATEGORY_XP))) {
 
             this.plugin.getQuestsLogger().debug("Saving player data for " + uuidString + ".");
 
@@ -429,8 +462,27 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
                 }
             }
 
+            for (final Category category : this.plugin.getQuestManager().getCategories()) {
+                final var categoryXP = category.getCategoryXP();
+                if (categoryXP == null) {
+                    continue;
+                }
+
+                final int level = categoryXP.getLevel(uuidString);
+                final int exp = categoryXP.getExp(uuidString);
+
+                categoryXpStmt.setString(1, uuidString);
+                categoryXpStmt.setString(2, category.getId());
+                categoryXpStmt.setInt(3, level);
+                categoryXpStmt.setInt(4, exp);
+                categoryXpStmt.setInt(5, level);
+                categoryXpStmt.setInt(6, exp);
+                categoryXpStmt.addBatch();
+            }
+
             questStmt.executeBatch();
             taskStmt.executeBatch();
+            categoryXpStmt.executeBatch();
 
             return true;
         } catch (final SQLException e) {
@@ -517,9 +569,10 @@ public final class ModernMySQLStorageProvider implements StorageProvider {
         private static final String UPDATE_DATABASE_INFORMATION =
                 "INSERT INTO `{prefix}database_information` (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?;";
 
-        private static final int LATEST_SCHEMA_VERSION = 2;
+        private static final int LATEST_SCHEMA_VERSION = 3;
         private static final Map<Integer, String> MIGRATION_STATEMENTS = new HashMap<>() {{
             this.put(1, "ALTER TABLE `{prefix}quest_progress` ADD COLUMN `started_date` BIGINT NOT NULL AFTER `started`;");
+            this.put(2, "CREATE TABLE IF NOT EXISTS `{prefix}category_xp` (`uuid` CHAR(36) NOT NULL, `category_id` VARCHAR(50) NOT NULL, `level` INT NOT NULL, `exp` INT NOT NULL, PRIMARY KEY (`uuid`, `category_id`));");
         }};
 
         private DatabaseMigrator(final @NotNull BukkitQuestsPlugin plugin, final @NotNull Function<String, String> prefixer, final @NotNull Connection conn) {

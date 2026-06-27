@@ -14,6 +14,15 @@ tasks.withType<ProcessResources> {
     }
 }
 
+sourceSets {
+    named("main") {
+        java {
+            exclude("com/leonardobishop/quests/bukkit/tasktype/type/dependent/ZNPCsPlusDeliverTaskType.java")
+            exclude("com/leonardobishop/quests/bukkit/tasktype/type/dependent/ZNPCsPlusInteractTaskType.java")
+        }
+    }
+}
+
 repositories {
     // Paper
     maven("https://repo.papermc.io/repository/maven-public/")
@@ -68,6 +77,7 @@ repositories {
     // WildStacker
     maven("https://repo.bg-software.com/repository/api/")
     // ZNPCsPlus
+    maven("https://repo.pyr.lol/releases")
     maven("https://repo.pyr.lol/snapshots")
 
     // bungeecord-chat, HikariCP, hppc, JetBrains Annotations, slf4j
@@ -123,8 +133,6 @@ dependencies {
     compileOnlyPlugin("io.lumine:Mythic-Dist:5.2.0")
     // Nexo
     compileOnlyPlugin("com.nexomc:nexo:1.1.0")
-    // NuVotifier
-    compileOnlyPlugin("com.vexsoftware:NuVotifier:2.7.3")
     // Oraxen
     compileOnlyPlugin("io.th0rgal:oraxen:1.175.0")
     // PlaceholderAPI
@@ -147,9 +155,6 @@ dependencies {
     compileOnlyPlugin("com.bencodez:votingplugin:6.18.4")
     // WildStacker
     compileOnlyPlugin("com.bgsoftware:WildStackerAPI:2025.1")
-    // ZNPCsPlus
-    compileOnlyPlugin("lol.pyr:znpcsplus-api:2.0.0-SNAPSHOT")
-
     // IridiumSkyblock, PyroFishingPro, uSkyBlock
     compileOnlyLibs("libs", listOf("*.jar"))
 

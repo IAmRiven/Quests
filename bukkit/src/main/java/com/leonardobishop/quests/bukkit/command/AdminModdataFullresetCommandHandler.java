@@ -25,6 +25,7 @@ public class AdminModdataFullresetCommandHandler implements CommandHandler {
             CommandUtils.useOtherPlayer(sender, args[3], plugin, (qPlayer) -> {
                 QuestProgressFile questProgressFile = qPlayer.getQuestProgressFile();
                 questProgressFile.reset();
+                CommandUtils.resetAllCategoryProgress(this.plugin, qPlayer);
                 Messages.COMMAND_QUEST_ADMIN_FULLRESET.send(sender, "{player}", args[3]);
 
                 CommandUtils.doSafeSave(this.plugin, qPlayer);

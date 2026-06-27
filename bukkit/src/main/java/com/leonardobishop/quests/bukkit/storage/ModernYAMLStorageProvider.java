@@ -119,7 +119,6 @@ public final class ModernYAMLStorageProvider implements StorageProvider {
                             final Set<String> taskIds = taskProgressSection.getKeys(false);
 
                             for (final String taskId : taskIds) {
-                                // quest is not null only if this.validateQuests is true
                                 if (quest != null) {
                                     final Task task = quest.getTaskById(taskId);
 
@@ -142,7 +141,7 @@ public final class ModernYAMLStorageProvider implements StorageProvider {
                         questProgressFile.addQuestProgress(questProgress);
                     }
                 }
-                // Cargar niveles y experiencia por categoría si existen
+
                 final ConfigurationSection categoryXpSection = data.getConfigurationSection("category-xp");
                 if (categoryXpSection != null) {
                     final Set<String> categoryIds = categoryXpSection.getKeys(false);
