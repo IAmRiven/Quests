@@ -50,8 +50,6 @@ repositories {
     maven("https://mvn.lumine.io/repository/maven-public/")
     // Nexo
     maven("https://repo.nexomc.com/releases")
-    // NuVotifier
-    maven("https://repo.leonardobishop.com/releases/")
     // Oraxen
     maven("https://repo.oraxen.com/releases")
     // PlaceholderAPI
@@ -68,14 +66,12 @@ repositories {
     }
     // PlayerPoints
     maven("https://repo.rosewooddev.io/repository/public/")
-    // SuperiorSkyblock2
+    // SuperiorSkyblock2, WildStacker
     maven("https://repo.bg-software.com/repository/api/")
     // uSkyBlock TODO fix whenever repo is up
     //maven("https://raw.githubusercontent.com/uskyblock/uskyblock-repo/master/")
     // VotingPlugin
     maven("https://nexus.bencodez.com/repository/maven-public/")
-    // WildStacker
-    maven("https://repo.bg-software.com/repository/api/")
     // ZNPCsPlus
     maven("https://repo.pyr.lol/releases")
     maven("https://repo.pyr.lol/snapshots")
@@ -133,6 +129,8 @@ dependencies {
     compileOnlyPlugin("io.lumine:Mythic-Dist:5.2.0")
     // Nexo
     compileOnlyPlugin("com.nexomc:nexo:1.1.0")
+    // NuVotifier // TODO fix when they fix their velocity api dependency
+    //compileOnlyPlugin("com.github.NuVotifier:NuVotifier:2.7.3")
     // Oraxen
     compileOnlyPlugin("io.th0rgal:oraxen:1.175.0")
     // PlaceholderAPI
