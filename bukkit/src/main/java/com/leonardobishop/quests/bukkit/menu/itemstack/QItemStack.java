@@ -32,6 +32,8 @@ import com.leonardobishop.quests.common.quest.Category;
 import com.leonardobishop.quests.common.quest.CategoryXP;
 public class QItemStack {
 
+    private static final Pattern RGB_SECTION_COLOR_PATTERN = Pattern.compile("(?i)§x(§[0-9A-F]){6}");
+
     private final BukkitQuestsPlugin plugin;
 
     private String name;
@@ -195,8 +197,12 @@ public class QItemStack {
                             String maybeUnique = cat.getUniqueName();
                             if (maybeUnique != null) catUniqueName = maybeUnique;
                         }
+                        String catUniqueNameStripped = stripAllColor(catUniqueName);
                         msg = plugin.getQuestsConfig().getString("messages.quest-requirement-categorylevel", "&7• &eNivel en la categoría: &6{level}")
-                                .replace("{category_unique_name}", catUniqueName)
+                                .replace("{category}", catUniqueNameStripped)
+                                .replace("{category_unique_name}", catUniqueNameStripped)
+                                .replace("{category_plain}", catUniqueNameStripped)
+                                .replace("{category_unique_name_plain}", catUniqueNameStripped)
                                 .replace("{level}", lvl);
                         levelReqs.add(Chat.legacyColor(msg));
                     }
@@ -211,8 +217,12 @@ public class QItemStack {
                             String maybeUnique = cat.getUniqueName();
                             if (maybeUnique != null) catUniqueName = maybeUnique;
                         }
+                        String catUniqueNameStripped = stripAllColor(catUniqueName);
                         msg = plugin.getQuestsConfig().getString("messages.quest-requirement-categoryxp", "&7• &eExperiencia en la categoría: &6{xp}")
-                                .replace("{category_unique_name}", catUniqueName)
+                                .replace("{category}", catUniqueNameStripped)
+                                .replace("{category_unique_name}", catUniqueNameStripped)
+                                .replace("{category_plain}", catUniqueNameStripped)
+                                .replace("{category_unique_name_plain}", catUniqueNameStripped)
                                 .replace("{xp}", xp);
                         xpReqs.add(Chat.legacyColor(msg));
                     }
@@ -259,6 +269,20 @@ public class QItemStack {
             out.addAll(xpReqs);
         }
         return out;
+    }
+
+    private String stripAllColor(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        String stripped = RGB_SECTION_COLOR_PATTERN.matcher(input).replaceAll("");
+        stripped = Chat.legacyStrip(stripped);
+        if (stripped == null) {
+            return null;
+        }
+
+        return stripped.replaceAll("(?i)[&§][0-9A-FK-ORX#]", "");
     }
 
     public static final Pattern TASK_PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+):(progress|goal|complete|id)}");
