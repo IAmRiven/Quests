@@ -79,6 +79,7 @@ options:
     quests-menu: "Quests"
     quests-started-menu: "Started Quests"
     daily-quests: "Daily Quests"
+    weekly-quests: "Weekly Quests"
     quest-cancel: "Cancel Quest"
   # See https://quests.leonardobishop.com/configuration/basic-options.html#sounds
   sounds:
@@ -378,6 +379,23 @@ gui:
       - "&7(&a{quest}&7) and cannot."
       - "&7repeat it."
     type: "GREEN_STAINED_GLASS_PANE"
+  daily-quest-display:
+    name: "&6&lDaily Quest"
+  weekly-quest-display:
+    name: "&6&lWeekly Quest"
+    lore-normal:
+      - "&7Daily mission available."
+      - "&8"
+      - "&eObjective:"
+      - "&7- &f{this:progress}&7/&f{this:goal}"
+      - "&8"
+      - "&eRewards:"
+      - "&7Check the quest details below."
+    lore-started:
+      - "&8"
+      - "&eCurrent progress:"
+      - "&7- &f{this:progress}&7/&f{this:goal}"
+    type: "PAPER"
   no-started-quests:
     name: "&c&lNo Started Quests"
     lore:

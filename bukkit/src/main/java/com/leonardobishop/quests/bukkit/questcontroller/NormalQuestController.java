@@ -41,6 +41,9 @@ import java.util.concurrent.TimeUnit;
 
 public class NormalQuestController implements QuestController {
 
+    private static final String DAILY_AUTO_PREFIX = "daily_auto_";
+    private static final String WEEKLY_AUTO_PREFIX = "weekly_auto_";
+
     private final BukkitQuestsPlugin plugin;
     private final BukkitQuestsConfig config;
 
@@ -269,6 +272,7 @@ public class NormalQuestController implements QuestController {
         questProgress.setCompletedBefore(true);
         questProgress.setCompletionDate(System.currentTimeMillis());
         Player player = Bukkit.getPlayer(qPlayer.getPlayerUUID());
+        boolean silentDailyQuest = quest.getId().startsWith(DAILY_AUTO_PREFIX) || quest.getId().startsWith(WEEKLY_AUTO_PREFIX);
 
         if (player != null) {
             QItemStack qItemStack = plugin.getQItemStackRegistry().getQuestItemStack(quest);
@@ -291,7 +295,19 @@ public class NormalQuestController implements QuestController {
 
                 for (String s : quest.getRewards()) {
                     String cmd = this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, s);
-                    if (cmd.toLowerCase().startsWith("categoryxp ")) {
+                    if (silentDailyQuest && cmd.toLowerCase().startsWith("minecraft:xp add ")) {
+                        String[] args = cmd.split(" ");
+                        if (args.length >= 4) {
+                            try {
+                                int amount = Integer.parseInt(args[3]);
+                                player.giveExp(amount);
+                            } catch (NumberFormatException ignored) {
+                                DispatchUtils.dispatchCommand(player, cmd);
+                            }
+                        } else {
+                            DispatchUtils.dispatchCommand(player, cmd);
+                        }
+                    } else if (cmd.toLowerCase().startsWith("categoryxp ")) {
                         // Sintaxis: categoryxp givexp <categoria> <jugador> <cantidad>
                         //           categoryxp givelevel <categoria> <jugador> <cantidad>
                         String[] args = cmd.split(" ");
@@ -320,13 +336,15 @@ public class NormalQuestController implements QuestController {
                 }
             });
 
-            Messages.send(questFinishEvent.getQuestFinishMessage(), player);
+            if (!silentDailyQuest) {
+                Messages.send(questFinishEvent.getQuestFinishMessage(), player);
+            }
 
             if (config.getBoolean("options.titles-enabled")) {
                 final String completeTitle = Messages.TITLE_QUEST_COMPLETE_TITLE.getMessageLegacyColor();
                 final String completeSubtitle = Messages.TITLE_QUEST_COMPLETE_SUBTITLE.getMessageLegacyColor();
 
-                if (!completeTitle.isEmpty() || !completeSubtitle.isEmpty()) {
+                if (!silentDailyQuest && (!completeTitle.isEmpty() || !completeSubtitle.isEmpty())) {
                     this.plugin.getTitleHandle().sendTitle(player,
                             this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, completeTitle.replace("{quest}", displayNameStripped).replace("{questcolored}", displayName)),
                             this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, completeSubtitle.replace("{quest}", displayNameStripped).replace("{questcolored}", displayName))
@@ -334,8 +352,10 @@ public class NormalQuestController implements QuestController {
                 }
             }
 
-            for (String s : quest.getRewardString()) {
-                Chat.send(player, this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, s), true);
+            if (!silentDailyQuest) {
+                for (String s : quest.getRewardString()) {
+                    Chat.send(player, this.plugin.applyPlayerAndPAPI(BukkitQuestsPlugin.PAPIType.QUESTS, player, s), true);
+                }
             }
 
             SoundUtils.playSoundForPlayer(player, plugin.getQuestsConfig().getString("options.sounds.quest-complete"));

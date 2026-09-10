@@ -64,6 +64,9 @@ permissions:
   quests.command.quest:
     description: Permission to execute /q quest
     default: op
+  quests.command.daily:
+    description: Permission to execute /q daily
+    default: op
   quests.command.start:
     description: Permission to execute /q start
     default: op

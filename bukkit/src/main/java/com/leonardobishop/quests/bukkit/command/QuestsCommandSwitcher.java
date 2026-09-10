@@ -28,6 +28,7 @@ public class QuestsCommandSwitcher extends CommandSwitcher implements TabExecuto
         super.subcommands.put("categoryxp", new CategoryXPCommandHandler(plugin));
         super.subcommands.put("random", new RandomCommandHandler(plugin));
         super.subcommands.put("started", new StartedCommandHandler(plugin));
+        super.subcommands.put("daily", new DailyCommandHandler(plugin));
         super.subcommands.put("admin", new AdminCommandSwitcher(plugin));
         super.subcommands.put("start", new StartCommandHandler(plugin));
         super.subcommands.put("track", new TrackCommandHandler(plugin));
@@ -37,6 +38,7 @@ public class QuestsCommandSwitcher extends CommandSwitcher implements TabExecuto
         super.aliases.put("c", "category");
         super.aliases.put("cxp", "categoryxp");
         super.aliases.put("a", "admin");
+        super.aliases.put("d", "daily");
     }
 
     @Override
@@ -90,6 +92,9 @@ public class QuestsCommandSwitcher extends CommandSwitcher implements TabExecuto
         }
         if (sender.hasPermission(subcommands.get("started").getPermission())) {
             sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests started " + ChatColor.DARK_GRAY + ": show started quests");
+        }
+        if (sender.hasPermission(subcommands.get("daily").getPermission())) {
+            sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests d/daily " + ChatColor.DARK_GRAY + ": abrir misiones diarias");
         }
         if (sender.hasPermission(subcommands.get("quest").getPermission())) {
             sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests q/quest <questid> (start|cancel|track) " + ChatColor.DARK_GRAY + ": start, cancel or track quest by ID");

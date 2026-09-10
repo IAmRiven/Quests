@@ -46,6 +46,7 @@ import com.leonardobishop.quests.bukkit.listener.PlayerJoinListener;
 import com.leonardobishop.quests.bukkit.listener.PlayerLeaveListener;
 import com.leonardobishop.quests.bukkit.menu.MenuController;
 import com.leonardobishop.quests.bukkit.menu.itemstack.QItemStackRegistry;
+import com.leonardobishop.quests.bukkit.quest.DailyQuestManager;
 import com.leonardobishop.quests.bukkit.questcompleter.BukkitQuestCompleter;
 import com.leonardobishop.quests.bukkit.questcontroller.NormalQuestController;
 import com.leonardobishop.quests.bukkit.runnable.QuestsAutoSaveRunnable;
@@ -207,6 +208,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
     private QItemStackRegistry qItemStackRegistry;
     private QuestItemRegistry questItemRegistry;
     private MenuController menuController;
+    private DailyQuestManager dailyQuestManager;
     private AbstractPlaceholderAPIHook placeholderAPIHook;
     private AbstractCMIHook cmiHook;
     private AbstractCoreProtectHook coreProtectHook;
@@ -373,6 +375,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         this.menuController = new MenuController(this);
         this.questItemRegistry = new QuestItemRegistry();
         this.qItemStackRegistry = new QItemStackRegistry();
+        this.dailyQuestManager = new DailyQuestManager(this);
         this.questCompleter = new BukkitQuestCompleter(this);
 
         // Start metrics
@@ -629,6 +632,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
             BukkitQuestsLoader questsLoader = new BukkitQuestsLoader(this);
             questsLoader.loadQuestItems(new File(super.getDataFolder() + File.separator + "items"));
             configProblems = questsLoader.loadQuests(new File(super.getDataFolder() + File.separator + "quests"));
+            this.dailyQuestManager.reload();
 
             for (TaskType taskType : taskTypeManager.getTaskTypes()) {
                 try {
@@ -957,6 +961,10 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
 
     public MenuController getMenuController() {
         return menuController;
+    }
+
+    public DailyQuestManager getDailyQuestManager() {
+        return dailyQuestManager;
     }
 
     @NotNull

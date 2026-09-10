@@ -18,6 +18,7 @@ public class AdminCommandSwitcher extends CommandSwitcher {
         super.subcommands.put("items", new AdminItemsCommandHandler(plugin));
         super.subcommands.put("config", new AdminConfigCommandHandler(plugin));
         super.subcommands.put("migratedata", new AdminMigrateCommandHandler(plugin));
+        super.subcommands.put("rerollrotating", new AdminRerollRotatingQuestsCommandHandler(plugin));
         super.subcommands.put("update", new AdminUpdateCommandHandler(plugin));
         super.subcommands.put("wiki", new AdminWikiCommandHandler(plugin));
         super.subcommands.put("about", new AdminAboutCommandHandler(plugin));
@@ -35,6 +36,7 @@ public class AdminCommandSwitcher extends CommandSwitcher {
         sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a info [quest]" + ChatColor.DARK_GRAY + ": see information about loaded quests");
         sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a items [import <id>] " + ChatColor.DARK_GRAY + ": view registered quest items");
         sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a reload " + ChatColor.DARK_GRAY + ": reload Quests configuration");
+        sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a rerollrotating " + ChatColor.DARK_GRAY + ": regenerar misiones diarias y semanales");
         sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a config " + ChatColor.DARK_GRAY + ": see detected problems in config");
         sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a migratedata " + ChatColor.DARK_GRAY + ": migrate quests data");
         sender.sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.RED + "/quests a update " + ChatColor.DARK_GRAY + ": check for updates");

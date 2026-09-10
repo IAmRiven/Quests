@@ -1,0 +1,50 @@
+package com.leonardobishop.quests.bukkit.command;
+
+import com.leonardobishop.quests.bukkit.BukkitQuestsPlugin;
+import com.leonardobishop.quests.bukkit.menu.DailyQMenu;
+import com.leonardobishop.quests.bukkit.util.Messages;
+import com.leonardobishop.quests.common.player.QPlayer;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
+
+public class DailyCommandHandler implements CommandHandler {
+
+    private final BukkitQuestsPlugin plugin;
+
+    public DailyCommandHandler(BukkitQuestsPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public void handle(CommandSender sender, String[] args) {
+        Player player = (Player) sender;
+        QPlayer qPlayer = plugin.getPlayerManager().getPlayer(player.getUniqueId());
+        if (qPlayer == null) {
+            Messages.COMMAND_DATA_NOT_LOADED.send(player);
+            return;
+        }
+
+        plugin.getDailyQuestManager().handlePlayerLoad(qPlayer);
+        DailyQMenu menu = new DailyQMenu(
+                plugin,
+                qPlayer,
+                plugin.getDailyQuestManager().getActiveDailyQuests(),
+                plugin.getDailyQuestManager().getActiveWeeklyQuests()
+        );
+        plugin.getMenuController().openMenu(player, menu);
+    }
+
+    @Override
+    public List<String> tabComplete(CommandSender sender, String[] args) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public @Nullable String getPermission() {
+        return "quests.command.daily";
+    }
+}
