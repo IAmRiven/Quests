@@ -739,10 +739,10 @@ public class DailyQuestManager {
 
         QItemStack qItemStack = new QItemStack(plugin,
                 Chat.legacyColor(name),
-                Chat.legacyColor(buildNormalLore(description, task, vaultReward, experienceReward)),
+            Chat.legacyColor(buildNormalLore(description, task, vaultReward, experienceReward, itemRewards)),
                 Chat.legacyColor(List.of()),
                 icon);
-        qItemStack = getConfiguredRotatingQItemStackOrFallback(qItemStack, icon, task, questId.startsWith(WEEKLY_PREFIX));
+        qItemStack = getConfiguredRotatingQItemStackOrFallback(qItemStack, icon, task, questId.startsWith(WEEKLY_PREFIX), itemRewards);
         plugin.getQItemStackRegistry().register(quest, qItemStack);
         return quest;
     }
@@ -761,7 +761,7 @@ public class DailyQuestManager {
             String commandTemplate = rotatingRewardsConfig.getString(path + ".command", "").trim();
             String itemType = rotatingRewardsConfig.getString(path + ".item-type", "MATERIAL").trim();
             double chance = rotatingRewardsConfig.getDouble(path + ".chance", 0D);
-            int amount = Math.max(1, rotatingRewardsConfig.getInt(path + ".amount", 1));
+            int amount = parseRewardAmount(rotatingRewardsConfig.getString(path + ".amount", "1"), random);
             if (!provider.equals("mmoitems") || !plugin.getServer().getPluginManager().isPluginEnabled("MMOItems")
                     || itemId.isEmpty() || commandTemplate.isEmpty() || chance <= 0D || random.nextDouble() * 100D >= chance) {
                 continue;
@@ -789,6 +789,25 @@ public class DailyQuestManager {
         return rewards;
     }
 
+    private int parseRewardAmount(String configuredAmount, Random random) {
+        String value = configuredAmount == null ? "1" : configuredAmount.trim();
+        if (value.matches("\\d+\\s*-\\s*\\d+")) {
+            String[] bounds = value.split("\\s*-\\s*");
+            int minimum = Integer.parseInt(bounds[0]);
+            int maximum = Integer.parseInt(bounds[1]);
+            int lowerBound = Math.max(1, Math.min(minimum, maximum));
+            int upperBound = Math.max(lowerBound, Math.max(minimum, maximum));
+            return lowerBound + random.nextInt(upperBound - lowerBound + 1);
+        }
+
+        try {
+            return Math.max(1, Integer.parseInt(value));
+        } catch (NumberFormatException exception) {
+            plugin.getQuestsLogger().warning("Invalid rotating reward amount '" + configuredAmount + "'. Using 1.");
+            return 1;
+        }
+    }
+
     private void loadRotatingRewardsConfig() {
         File file = new File(plugin.getDataFolder(), "daily-rewards.yml");
         rotatingRewardsConfig = YamlConfiguration.loadConfiguration(file);
@@ -797,7 +816,7 @@ public class DailyQuestManager {
     private record RotatingReward(String command, String displayName, int amount) {
     }
 
-    private QItemStack getConfiguredRotatingQItemStackOrFallback(QItemStack fallback, ItemStack iconFallback, Task task, boolean weekly) {
+    private QItemStack getConfiguredRotatingQItemStackOrFallback(QItemStack fallback, ItemStack iconFallback, Task task, boolean weekly, List<RotatingReward> itemRewards) {
         FileConfiguration config = plugin.getConfig();
         String path = weekly ? "gui.weekly-quest-display" : "gui.daily-quest-display";
         if (!config.isConfigurationSection(path)) {
@@ -820,6 +839,13 @@ public class DailyQuestManager {
             loreStarted = List.of();
         }
 
+        if (!itemRewards.isEmpty()) {
+            loreNormal = new ArrayList<>(loreNormal);
+            loreNormal.add("");
+            loreNormal.add("&eRecompensas extra:");
+            loreNormal.addAll(buildItemRewardLore(itemRewards));
+        }
+
         ItemStack configuredItem = plugin.getConfiguredItemStack(path, config,
                 com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter.Filter.DISPLAY_NAME,
                 com.leonardobishop.quests.bukkit.hook.itemgetter.ItemGetter.Filter.LORE,
@@ -838,7 +864,7 @@ public class DailyQuestManager {
         return normalized;
     }
 
-    private List<String> buildNormalLore(List<String> description, Task task, int vaultReward, int experienceReward) {
+    private List<String> buildNormalLore(List<String> description, Task task, int vaultReward, int experienceReward, List<RotatingReward> itemRewards) {
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.add(buildObjectiveLine(task));
@@ -847,7 +873,20 @@ public class DailyQuestManager {
         lore.add("&eRecompensas:");
         lore.add("&7• &f" + vaultReward + " &fmonedas ");
         lore.add("&7• &f" + experienceReward + " &fexperiencia ψ");
+        if (!itemRewards.isEmpty()) {
+            lore.add("");
+            lore.add("&eRecompensas extra:");
+            lore.addAll(buildItemRewardLore(itemRewards));
+        }
         lore.add("");
+        return lore;
+    }
+
+    private List<String> buildItemRewardLore(List<RotatingReward> itemRewards) {
+        List<String> lore = new ArrayList<>();
+        for (RotatingReward reward : itemRewards) {
+            lore.add("&7• &f" + reward.displayName() + " &7x" + reward.amount());
+        }
         return lore;
     }
 
