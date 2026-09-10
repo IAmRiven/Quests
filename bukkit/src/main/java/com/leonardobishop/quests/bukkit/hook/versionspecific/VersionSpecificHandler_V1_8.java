@@ -99,6 +99,11 @@ public class VersionSpecificHandler_V1_8 implements VersionSpecificHandler {
     }
 
     @Override
+    public boolean isPlayerOnZombieNautilus(Player player) {
+        return false;
+    }
+
+    @Override
     public boolean isOffHandSwap(ClickType clickType) {
         return false;
     }
@@ -242,5 +247,10 @@ public class VersionSpecificHandler_V1_8 implements VersionSpecificHandler {
     @Override
     public String getBiomeKey(Biome biome) {
         return biome.name();
+    }
+
+    @Override
+    public @Nullable ItemStack getAbstractArrowItem(Entity entity) {
+        return null;
     }
 }
