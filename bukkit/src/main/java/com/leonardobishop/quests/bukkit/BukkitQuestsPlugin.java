@@ -744,6 +744,10 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
         if (!categories.exists()) {
             writeResourceToFile("resources/bukkit/categories.yml", categories);
         }
+        File dailyRewards = new File(this.getDataFolder() + File.separator + "daily-rewards.yml");
+        if (!dailyRewards.exists()) {
+            writeResourceToFile("resources/bukkit/daily-rewards.yml", dailyRewards);
+        }
 
         File questsDirectory = new File(this.getDataFolder() + File.separator + "quests");
         if (!questsDirectory.exists() && !questsDirectory.isDirectory()) {

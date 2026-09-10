@@ -38,6 +38,11 @@ public final class WalkingTaskType extends BukkitTaskType {
         super.addConfigValidator(TaskUtils.useAcceptedValuesConfigValidator(this, Mode.STRING_MODE_MAP.keySet(), "mode", "mode", false));
     }
 
+    @Override
+    public Object getGoal(final Task task) {
+        return task.getConfigValue("distance", "-");
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Location from = event.getFrom();

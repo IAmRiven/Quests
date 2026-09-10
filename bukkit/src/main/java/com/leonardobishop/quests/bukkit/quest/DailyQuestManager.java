@@ -8,11 +8,15 @@ import com.leonardobishop.quests.common.player.QPlayer;
 import com.leonardobishop.quests.common.player.questprogressfile.QuestProgressFile;
 import com.leonardobishop.quests.common.quest.Quest;
 import com.leonardobishop.quests.common.quest.Task;
+import net.Indyuce.mmoitems.MMOItems;
+import net.Indyuce.mmoitems.api.Type;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 
+import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,6 +46,7 @@ public class DailyQuestManager {
     private final BukkitQuestsPlugin plugin;
     private final List<Quest> activeDailyQuests = new ArrayList<>();
     private final List<Quest> activeWeeklyQuests = new ArrayList<>();
+    private YamlConfiguration rotatingRewardsConfig = new YamlConfiguration();
     private WrappedTask dailyRefreshTask;
     private WrappedTask weeklyRefreshTask;
     private LocalDate activeDailyDate;
@@ -54,6 +59,7 @@ public class DailyQuestManager {
     }
 
     public synchronized void reload() {
+        loadRotatingRewardsConfig();
         refreshDailyIfNeeded(true);
         refreshWeeklyIfNeeded(true);
         scheduleDailyRefresh();
@@ -705,6 +711,17 @@ public class DailyQuestManager {
     }
 
     private Quest buildQuest(String questId, String name, List<String> description, ItemStack icon, Task task, int vaultReward, int experienceReward) {
+        List<RotatingReward> itemRewards = getConfiguredItemRewards(new Random(questId.hashCode()), questId.startsWith(WEEKLY_PREFIX));
+        List<String> rewardCommands = new ArrayList<>();
+        rewardCommands.add("minecraft:xp add {player} " + experienceReward + " points");
+        List<String> rewardLines = new ArrayList<>();
+        rewardLines.add("&7Has completado una &6misión " + (questId.startsWith(WEEKLY_PREFIX) ? "semanal" : "diaria") + "&7.");
+        rewardLines.add("&7Recompensa: &a$" + vaultReward + " &7y &b" + experienceReward + " xp");
+        for (RotatingReward reward : itemRewards) {
+            rewardCommands.add(reward.command());
+            rewardLines.add("&7Objeto extra: &e" + reward.displayName() + " x" + reward.amount());
+        }
+
         Quest quest = new Quest.Builder(questId)
                 .withRepeatEnabled(false)
                 .withCancellable(true)
@@ -713,11 +730,8 @@ public class DailyQuestManager {
                 .withHidden(true)
                 .withSortOrder(Integer.MIN_VALUE)
                 .withStartString(List.of())
-                .withRewardString(List.of(
-                        "&7Has completado una &6misión " + (questId.startsWith(WEEKLY_PREFIX) ? "semanal" : "diaria") + "&7.",
-                        "&7Recompensa: &a$" + vaultReward + " &7y &b" + experienceReward + " xp"
-                ))
-                .withRewards(List.of("minecraft:xp add {player} " + experienceReward + " points"))
+                .withRewardString(rewardLines)
+                .withRewards(rewardCommands)
                 .withVaultReward(String.valueOf(vaultReward))
                 .withPlaceholders(Map.of("progress", questId.startsWith(WEEKLY_PREFIX) ? "&6Progreso semanal" : "&6Progreso diario"))
                 .build();
@@ -731,6 +745,56 @@ public class DailyQuestManager {
         qItemStack = getConfiguredRotatingQItemStackOrFallback(qItemStack, icon, task, questId.startsWith(WEEKLY_PREFIX));
         plugin.getQItemStackRegistry().register(quest, qItemStack);
         return quest;
+    }
+
+    private List<RotatingReward> getConfiguredItemRewards(Random random, boolean weekly) {
+        String sectionPath = weekly ? "WeeklyRewards" : "DailyRewards";
+        if (rotatingRewardsConfig.getConfigurationSection(sectionPath) == null) {
+            return List.of();
+        }
+
+        List<RotatingReward> rewards = new ArrayList<>();
+        for (String key : rotatingRewardsConfig.getConfigurationSection(sectionPath).getKeys(false)) {
+            String path = sectionPath + "." + key;
+            String provider = rotatingRewardsConfig.getString(path + ".type", "mmoitems").trim().toLowerCase(Locale.ROOT);
+            String itemId = rotatingRewardsConfig.getString(path + ".id", "").trim();
+            String commandTemplate = rotatingRewardsConfig.getString(path + ".command", "").trim();
+            String itemType = rotatingRewardsConfig.getString(path + ".item-type", "MATERIAL").trim();
+            double chance = rotatingRewardsConfig.getDouble(path + ".chance", 0D);
+            int amount = Math.max(1, rotatingRewardsConfig.getInt(path + ".amount", 1));
+            if (!provider.equals("mmoitems") || !plugin.getServer().getPluginManager().isPluginEnabled("MMOItems")
+                    || itemId.isEmpty() || commandTemplate.isEmpty() || chance <= 0D || random.nextDouble() * 100D >= chance) {
+                continue;
+            }
+
+            ItemStack itemStack;
+            try {
+                itemStack = MMOItems.plugin.getItem(Type.get(itemType), itemId);
+            } catch (Exception exception) {
+                itemStack = null;
+            }
+            if (itemStack == null) {
+                plugin.getQuestsLogger().warning("Ignoring rotating MMOItems reward '" + itemType + ":" + itemId + "': item not found.");
+                continue;
+            }
+
+            String command = commandTemplate
+                    .replace("{item}", itemId)
+                    .replace("{type}", itemType)
+                    .replace("{amount}", String.valueOf(amount));
+            String displayName = itemStack.getItemMeta() != null && itemStack.getItemMeta().getDisplayName() != null
+                    ? itemStack.getItemMeta().getDisplayName() : itemId;
+            rewards.add(new RotatingReward(command, displayName, amount));
+        }
+        return rewards;
+    }
+
+    private void loadRotatingRewardsConfig() {
+        File file = new File(plugin.getDataFolder(), "daily-rewards.yml");
+        rotatingRewardsConfig = YamlConfiguration.loadConfiguration(file);
+    }
+
+    private record RotatingReward(String command, String displayName, int amount) {
     }
 
     private QItemStack getConfiguredRotatingQItemStackOrFallback(QItemStack fallback, ItemStack iconFallback, Task task, boolean weekly) {

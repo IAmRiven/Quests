@@ -1,0 +1,37 @@
+# Rewards for automatically generated quests.
+# Each entry is rolled independently, so multiple rewards can be awarded by one quest.
+# chance is a percentage from 0 to 100.
+
+DailyRewards:
+  FRAGMENTO_HOGAR:
+    type: "mmoitems"
+    item-type: "MATERIAL"
+    id: "FRAGMENTO_HOGAR"
+    amount: 30
+    chance: 15
+    command: "mi give {type} {item} {player} {amount} 0 100 0 silent"
+  FRAGMENTO_PROTECCION:
+    type: "mmoitems"
+    item-type: "MATERIAL"
+    id: "FRAGMENTO_PROTECCION"
+    amount: 30
+    chance: 15
+    command: "mi give {type} {item} {player} {amount} 0 100 0 silent"
+
+WeeklyRewards:
+  FRAGMENTO_HOGAR:
+    type: "mmoitems"
+    item-type: "MATERIAL"
+    id: "FRAGMENTO_HOGAR"
+    amount: 30
+    chance: 30
+    command: "mi give {type} {item} {player} {amount} 0 100 0 silent"
+  FRAGMENTO_PROTECCION:
+    type: "mmoitems"
+    item-type: "MATERIAL"
+    id: "FRAGMENTO_PROTECCION"
+    amount: 30
+    chance: 30
+    command: "mi give {type} {item} {player} {amount} 0 100 0 silent"
+
+MonthlyRewards: {}
